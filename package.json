@@ -1,0 +1,48 @@
+{
+  "name": "stats-logger",
+  "version": "0.0.1",
+  "description": "A lightweight application stats tracker and logger",
+  "main": "index.js",
+  "author": "Kinvey <support@kinvey.com>",
+  "contributors": [
+    "Michael Salinger <mjsalinger@kinvey.com>"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Kinvey/stats-logger.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "node",
+    "stats",
+    "logger",
+    "logging"
+  ],
+  "dependencies": {
+    "moment": "2.5.1"
+  },
+  "devDependencies": {
+    "should": "*",
+    "mocha": "*",
+    "sinon": "*"
+  },
+  "directories": {
+    "lib": ".",
+    "test": "test"
+  },
+  "licenses": [
+    {
+      "type": "Apache 2.0",
+      "url": "https://github.com/Kinvey/node-background-task/raw/master/LICENSE"
+    }
+  ],
+  "engine": {
+    "node": ">=0.8"
+  },
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
