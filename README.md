@@ -161,6 +161,7 @@ recordStat("myStat", 3);  // value is 3
 recordStat("myStat", 5);  // value is 5
 recordStat("myStat", 1); // value is 1
 recordStat("myStat", -3); // value is -3
+```
 
 ### mean
 
