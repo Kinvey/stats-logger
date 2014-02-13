@@ -43,7 +43,7 @@ describe('StatsLogger', function() {
     };
 
     generateStub = function(type, options) {
-      return {statInstance: {name: type, options: options, value: 1}, record: recordStat, toString: returnString};
+      return {statInstance: {name: type, options: options, value: 1}, setStat: recordStat, toString: returnString};
     };
 
 
