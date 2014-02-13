@@ -4,8 +4,7 @@ test: all
 
 all: test-StatsLogger \
 	test-stats \
-	test-fileBackend \
-	test-integration
+	test-backends
 
 test-StatsLogger:
 	@./node_modules/.bin/mocha test/test-StatsLogger.js
@@ -13,11 +12,8 @@ test-StatsLogger:
 test-stats:
 	@./node_modules/.bin/mocha test/test-stats.js
 
-test-fileBackend:
-	@./node_modules/.bin/mocha test/test-fileBackend.js
-
-test-integration:
-	@./node_modules/.bin/mocha test/test-integration.js
+test-backends:
+	@./node_modules/.bin/mocha test/test-backends.js
 
 .PHONY: test
 
