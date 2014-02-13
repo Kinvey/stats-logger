@@ -301,6 +301,18 @@ describe('counter', function() {
     done();
   });
 
+  it('should not reset the counter value if suppressed', function(done) {
+    var a = counter.generate({suppressReset: true});
+    a.setStat();
+    a.setStat();
+    a.setStat();
+    a.setStat();
+    a.value.should.eql(4);
+    a.reset();
+    a.value.should.eql(4);
+    done();
+  });
+
   it('should be able to set an initial value other than 0', function(done) {
     var a = counter.generate({initialValue: 100});
     a.setStat();
@@ -382,8 +394,20 @@ describe('max', function() {
     a.setStat(5);
     a.setStat(8);
     a.setStat(3);
+    a.value.should.eql(8);
     a.reset();
     should.not.exist(a.value);
+    done();
+  });
+
+  it('should not reset the max value if suppressed', function(done) {
+    var a = max.generate({suppressReset: true});
+    a.setStat(5);
+    a.setStat(8);
+    a.setStat(3);
+    a.value.should.eql(8);
+    a.reset();
+    a.value.should.eql(8);
     done();
   });
 
@@ -469,8 +493,20 @@ describe('min', function() {
     a.setStat(5);
     a.setStat(8);
     a.setStat(3);
+    a.value.should.eql(3);
     a.reset();
     should.not.exist(a.value);
+    done();
+  });
+
+  it('should not reset the min value if suppressed', function(done) {
+    var a = min.generate({suppressReset: true});
+    a.setStat(5);
+    a.setStat(8);
+    a.setStat(3);
+    a.value.should.eql(3);
+    a.reset();
+    a.value.should.eql(3);
     done();
   });
 
@@ -567,6 +603,19 @@ describe('mean', function() {
     done();
   });
 
+  it('should not reset a count mean if suppressed', function(done) {
+    var a = mean.generate({meanType: 'count', suppressReset: true});
+    a.setStat(15);
+    a.setStat(5);
+    a.value.should.eql(10);
+    a.reset();
+    a.value.should.eql(10);
+    a.setStat(25);
+    a.setStat(25);
+    a.value.should.eql(17.5);
+    done();
+  });
+
   it('should calculate mean from another stat', function(done) {
     var emitter = new EventEmitter();
     var a = mean.generate({meanType: 'stat', statName: 'requests', emitter: emitter});
@@ -638,6 +687,20 @@ describe('mean', function() {
     should.not.exist(a.value);
     a.setStat(50);
     a.value.should.eql(2);
+    done();
+  });
+
+  it('should not reset a stat mean if suppressed', function(done) {
+    var emitter = new EventEmitter();
+    var a = mean.generate({meanType: 'stat', statName: 'requests', emitter: emitter, suppressReset: true});
+    a.setStat(15);
+    a.setStat(10);
+    a.setStat(100);
+    emitter.emit('requests', 25);
+    a.value.should.eql(5);
+    a.reset();
+    a.setStat(50);
+    a.value.should.eql(7);
     done();
   });
 
@@ -730,6 +793,16 @@ describe('snapshot', function() {
     a.value.should.eql(105);
     a.reset();
     a.value.should.eql(1000);
+    done();
+  });
+
+  it('should not reset value if suppressed', function(done) {
+    var a = snapshot.generate({resetValue: 1000, suppressReset: true});
+    should.not.exist(a.value);
+    a.setStat(105);
+    a.value.should.eql(105);
+    a.reset();
+    a.value.should.eql(105);
     done();
   });
 });
