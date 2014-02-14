@@ -4,6 +4,12 @@ A lightweight node module for capturing application statistics and writing them 
 
 The goal of this module is to provide a single consistent interface to capture a wide variety of application statistics, and record those statistics to an independent backend (e.g. a text file stats log, a redis instance, StackDriver, etc.).  
 
+## Installation
+
+```
+$ npm install stats-logger
+```
+
 ## Usage
 
 Once configured, stats are easily tracked by calling recordStat. 
