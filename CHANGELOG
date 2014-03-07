@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.1.0
+* Added calculated stat, which takes an array of stats to track and a calculation function
+
 ### 0.0.3
 * Bumped version due to NPM issue corrupting the 0.0.2 build
 

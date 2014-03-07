@@ -6,6 +6,7 @@ var max = require('../lib/stats/max');
 var min = require('../lib/stats/min');
 var mean = require('../lib/stats/mean');
 var snapshot = require('../lib/stats/snapshot');
+var calculated = require('../lib/stats/calculated');
 var EventEmitter = require('events').EventEmitter;
 var should = require('should');
 var sinon = require('sinon');
@@ -187,6 +188,65 @@ describe('stat generator', function(done) {
     a.setStat(5);
     a.setStat(15)
     a.toString().should.eql(10);
+    done();
+  });
+
+  it('should generate a calculated stat', function(done) {
+    var a = stat.generate('calculated');
+    a.statInstance.name.should.eql('calculated');
+    done();
+  });
+
+  it('should generate a calculated stat with options', function(done) {
+    var emitter = new EventEmitter();
+    var calcFunction = function() {
+      return "calculated";
+    };
+    var a = stat.generate('calculated', {stats: ['stat1', 'stat2', 'stat3'], emitter: emitter, calcFunction: calcFunction});
+    a.statInstance.name.should.eql('calculated');
+    a.statInstance.stats.should.eql(['stat1', 'stat2', 'stat3']);
+    a.statInstance.calcFunction().should.eql("calculated");
+    done();
+  });
+
+  it('should call the setStat method of the calculated stat', function(done) {
+    var a = stat.generate('calculated', {stats: ['stat1','stat2']});
+    var spy = sinon.spy(a.statInstance, 'setStat');
+    a.setStat('stat1', 1);
+    a.setStat('stat2', 2);
+    spy.callCount.should.eql(2);
+    a.statInstance.setStat.restore();
+    done();
+  });
+
+  it('should call the reset method of a calculated stat', function(done) {
+    var a = stat.generate('calculated', {stats: ['stat1', 'stat2']});
+    var spy = sinon.spy(a.statInstance, 'reset');
+    a.setStat('stat1', 1);
+    a.setStat('stat2', 2);
+    a.setStat('stat1', 5);
+    a.reset();
+    spy.callCount.should.eql(1);
+    a.statInstance.reset.restore();
+    done();
+  });
+
+  it('should return the value of the calculation when calling toString', function(done) {
+    var calcFunction = function(stats, statsMap){
+      var total = 1;
+      stats.forEach(function(stat) {
+        if (statsMap[stat] || statsMap[stat] === 0) {
+          total *= statsMap[stat];
+        }
+      });
+
+      return total;
+    };
+
+    var a = stat.generate('calculated', {stats: ['stat1','stat2'], calcFunction: calcFunction });
+    a.setStat('stat1', 5);
+    a.setStat('stat2', 25);
+    a.toString().should.eql(125);
     done();
   });
 
@@ -718,6 +778,181 @@ describe('mean', function() {
     emitter.emit('requests', 50);
     a.setStat(150);
     a.value.should.eql(3);
+    done();
+  });
+});
+
+describe('calculated', function() {
+
+  it('should ignore null values', function(done){
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1', 10);
+    emitter.emit('stat2', 20);
+    emitter.emit('stat3', 25);
+    a.value.should.eql(8);
+    emitter.emit('stat1', null);
+    a.value.should.eql(8);
+    done();
+  });
+
+  it('should ignore undefined values', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1', 10);
+    emitter.emit('stat2', 20);
+    emitter.emit('stat3', 25);
+    a.value.should.eql(8);
+    emitter.emit('stat1');
+    a.value.should.eql(8);
+    done();
+  });
+
+  it('should calculate a value from multiple stats', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+    emitter.emit('stat1', 10);
+    emitter.emit('stat2', 20);
+    emitter.emit('stat3', 25);
+    a.value.should.eql(8);
+    done();
+  });
+
+  it('should change value for stat calculations if the stat changes', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    emitter.emit('stat1', 20);
+    a.value.should.eql(2);
+    done();
+  });
+
+  it('should reset a calculation stat', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    a.reset();
+    should.not.exist(a.value);
+    should.not.exist(a.statMap.stat1);
+    should.not.exist(a.statMap.stat2);
+    should.not.exist(a.statMap.stat3);
+    done();
+  });
+
+  it('should not reset a stat calculation if suppressed', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], suppressReset: true, calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    a.reset();
+    a.value.should.eql(1.5);
+    done();
+  });
+
+  it('should reset a calculated stat and continue to receive stat events', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    a.reset();
+    should.not.exist(a.value);
+    emitter.emit('stat1', 100);
+    emitter.emit('stat2', 5);
+    emitter.emit('stat3', 50)
+    a.value.should.eql(10);
     done();
   });
 });

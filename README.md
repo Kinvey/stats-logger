@@ -208,6 +208,36 @@ recordStat("baseStat", 15); // value of baseStat is now 25, and value of myStat 
 recordStat("myStat", 25); // value is 75 / 25 = 3
 ```
 
+### calculated
+
+Monitors multiple stats and calculates a value based on a provided calculation function
+
+Options:
+
+* `stats` An array of stats to monitor.  The calculation function will be invoked whenever any stat in the array is updated
+* `calcFunction` The calculation function, which takes two arguments:
+  * stats:  An array consisting of the names of the stats that are part of the calculation
+  * statsMap:  an object containing the current value of each stat
+* `suppressReset` if true, then does not reset the counter on flush. Defaults to false.
+
+Sample calculated function
+```
+
+var calcFunction = function(stats, statsMap) {
+  return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+};
+
+addStat("stat1", "counter");
+addStat("stat2", "min");
+addStat("stat3", "snapshot");
+addStat("calcStat, "calculated, {stats: ['stat1','stat2','stat3], calcFunction: calcFunction});
+
+recordStat("stat1", 25); // value is 25 * null / 1 = null
+recordStat("stat2", 10); // value is 25 * 10 / 1 = 200
+recordStat("stat2", 15); // value is 25 * 10 / 1 = 200
+recordStat("stat3": 25); // value is 25 * 10 / 25 = 10
+```
+
 ## Backends
 
 Currently, only a file backend is implemented.  Other backends will be implemented soon.  
