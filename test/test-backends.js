@@ -17,13 +17,20 @@
 var EventEmitter = require('events').EventEmitter,
   sinon = require('sinon'),
   fileBackend = require('../lib/backends/file'),
-  moment = require('moment');
+  stackDriverBackend = require('../lib/backends/StackDriver'),
+  moment = require('moment'),
+  nock = require('nock');
 
 describe("backends", function() {
   var emitter;
 
   before(function(done) {
     emitter = new EventEmitter();
+    done();
+  });
+
+  afterEach(function(done) {
+    emitter.removeAllListeners('flush');
     done();
   });
 
@@ -173,6 +180,184 @@ describe("backends", function() {
         done();
       });
       var fb = fileBackend.connect(null, options);
+    });
+  });
+
+  describe("stackDriverBackend", function() {
+
+    afterEach(function (done) {
+      nock.cleanAll();
+      done();
+    });
+
+    it('should respond to multiple flush events', function(done) {
+      var spy = sinon.spy();
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .times(3)
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat'}};
+      var stat = {foo: "bar"};
+      var stat2 = {foo: "bar2"};
+      var stat3 = {foo: "bar3"};
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+      emitter.emit('flush', stat2);
+      emitter.emit('flush', stat3);
+
+      spy.callCount.should.eql(3);
+      JSON.parse(spy.args[0][1]).data[0].value.should.eql("bar");
+      JSON.parse(spy.args[0][1]).data[0].name.should.eql("fooStat");
+      JSON.parse(spy.args[1][1]).data[0].value.should.eql("bar2");
+      JSON.parse(spy.args[2][1]).data[0].value.should.eql("bar3");
+      sd.isDone().should.eql(true);
+
+      done();
+    });
+
+    it('should only send stats that have values', function(done) {
+      var spy = sinon.spy();
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat', foo2: 'fooStat2'}};
+      var stat = {foo: "bar"};
+
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+
+      sd.isDone().should.eql(true);
+      spy.callCount.should.eql(1);
+      var args = JSON.parse(spy.args[0][1]);
+      args.data.length.should.eql(1);
+      args.data[0].name.should.eql('fooStat');
+      done();
+
+    });
+
+    it('should ignore stats with no corresponding tags', function(done) {
+      var spy = sinon.spy();
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat'}};
+      var stat = {foo: "bar", foo2: "bar2"};
+
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+
+      sd.isDone().should.eql(true);
+      spy.callCount.should.eql(1);
+      var args = JSON.parse(spy.args[0][1]);
+      args.data.length.should.eql(1);
+      args.data[0].name.should.eql('fooStat');
+      done();
+    });
+
+    it('should respond to multiple stats', function(done) {
+      var spy = sinon.spy();
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat', foo2: 'fooStat2', foo3: 'fooStat3'}};
+      var stat = {foo: "bar", foo2: "bar2", foo3: "bar3"};
+
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+
+      spy.callCount.should.eql(1);
+      var args = JSON.parse(spy.args[0][1]);
+
+      args.data.length.should.eql(3);
+      args.data[0].name.should.eql('fooStat');
+      args.data[0].value.should.eql('bar');
+      args.data[1].name.should.eql('fooStat2');
+      args.data[1].value.should.eql('bar2');
+      args.data[2].name.should.eql('fooStat3');
+      args.data[2].value.should.eql('bar3');
+      done();
+    });
+
+    it('should include flush time in payload', function(done) {
+      var spy = sinon.spy();
+      var flushTime = moment('2014-2-15').format('X');
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat'}};
+      var stat = {foo: "bar", lastFlushTimeUnix: flushTime};
+
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+
+      spy.callCount.should.eql(1);
+      var args = JSON.parse(spy.args[0][1]);
+      args.data.length.should.eql(1);
+      args.data[0].name.should.eql('fooStat');
+      args.data[0].value.should.eql('bar');
+      args.data[0].collected_at.should.eql(flushTime);
+      done();
+    });
+
+    it('should allow optional instance name', function(done) {
+      var spy = sinon.spy();
+      var flushTime = moment('2014-2-15').format('X');
+      var sd = nock('https://custom-gateway.stackdriver.com')
+        .post('/v1/custom')
+        .reply(201, spy);
+
+      var options = {apiKey: "somekey", statsMap: {foo: 'fooStat'}, source: 'mySource'};
+      var stat = {foo: "bar", lastFlushTimeUnix: flushTime};
+
+      var stb = stackDriverBackend.connect(emitter, options);
+
+      emitter.emit('flush', stat);
+
+      spy.callCount.should.eql(1);
+      var args = JSON.parse(spy.args[0][1]);
+      args.data.length.should.eql(1);
+      args.data[0].name.should.eql('fooStat');
+      args.data[0].value.should.eql('bar');
+      args.data[0].instance.should.eql('mySource');
+      args.data[0].collected_at.should.eql(flushTime);
+      done();
+    });
+
+    it('should emit an error if an apiKey is not included', function(done) {
+      var options = {statsMap: {foo:'fooStat'}};
+      process.once('error', function(err) {
+        err.should.eql("Emitter, statsMap, and apiKey are required for the Stack Driver backend");
+        done();
+      });
+      var stb = stackDriverBackend.connect(emitter, options);
+    });
+
+    it('should emit an error if a statsMap is not included', function(done) {
+      var options = {apiKey: "myKey"};
+      process.once('error', function(err) {
+        err.should.eql("Emitter, statsMap, and apiKey are required for the Stack Driver backend");
+        done();
+      });
+      var stb = stackDriverBackend.connect(emitter, options);
+    });
+
+    it('should emit an error if an emitter is not included', function(done) {
+      var options = {apiKey: "myKey", statsMap: {foo: 'fooStat'}};
+      process.once('error', function(err) {
+        err.should.eql("Emitter, statsMap, and apiKey are required for the Stack Driver backend");
+        done();
+      });
+      var stb = stackDriverBackend.connect(null, options);
     });
   });
 });
