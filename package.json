@@ -1,6 +1,6 @@
 {
   "name": "stats-logger",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "A lightweight application stats tracker and logger",
   "main": "index.js",
   "author": "Kinvey <support@kinvey.com>",
@@ -15,10 +15,11 @@
     "test": "mocha"
   },
   "keywords": [
-    "node",
     "stats",
     "logger",
-    "logging"
+    "logging",
+    "statistics",
+    "node"
   ],
   "dependencies": {
     "moment": "2.0.x",

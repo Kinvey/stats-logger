@@ -176,8 +176,12 @@ Calculates the mean of values passed.
 There are two types of means - count means, which calculate the mean as the sum of the values passed / number of times recordStat is invoked, and stat means, which calculate the mean as the sum of the values passed / some other stat that is being tracked.  
 
 * `meanType` 'count' or 'stat', the type of mean.  Defaults to 'count'.  
-* `statName` If meanType is 'stat', the name of the stat to calculate the mean against.
+* `divisorStat` If meanType is 'stat', the name of the stat to use as the divsior.
+* `dividendStat` If meanType is 'stat', the name of the stat to use as the dividend
+* `initialValue` The initial value of the counter (defaults to ). Defaults to null.
+* `resetValue` The value to reset the counter by after each flush.  Defaults to null.
 * `suppressReset` if true, then does not reset the counter on flush. Defaults to false.
+* `fractionDigits` the number of fracitonal digits to the right of the decimal place to round to
 
 Sample count mean type
 
@@ -191,11 +195,11 @@ recordStat("myStat", 1); // value is 9 / 3 = 3
 recordStat("myStat", -3); // value is 6 / 4 = 2.5
 ```
 
-Sample stat mean type
+Sample stat mean type, with only a divisor stat
 
 ```
 addStat("baseStat", "counter");
-addStat("myStat", "mean", {meanType: 'stat', statName: 'baseStat');
+addStat("myStat", "mean", {meanType: 'stat', divisorStat: 'baseStat');
 
 recordStat('baseStat', 10);
 
@@ -206,6 +210,25 @@ recordStat("myStat", 20);  // value is 40 / 10 = 5
 recordStat("baseStat", 15); // value of baseStat is now 25, and value of myStat is now 2
 
 recordStat("myStat", 25); // value is 75 / 25 = 3
+```
+
+Sample stat mean type, with both a divisor and dividend stat
+
+```
+addStat("baseStat", "counter");
+addStat("baseStat2", "snapshot");
+addStat("myStat", "mean", {meanType: 'stat', divisorStat: 'baseStat', dividendStat: 'baseStat2');
+
+recordStat('baseStat', 10);
+recordStat('baseStat2', 50); // value is 50 / 10 = 25
+
+
+recordStat("baseStat2", 30);  // value is 30 / 10 = 3
+recordStat("baseStat2", 20);  // value is 20 / 10 = 2
+
+recordStat("baseStat", 20); // value of baseStat is now 20, and value of myStat is now 1
+
+recordStat("baseStat2", 40); // value is 40 / 20 = 2
 ```
 
 ### calculated
@@ -240,11 +263,9 @@ recordStat("stat3": 25); // value is 25 * 10 / 25 = 10
 
 ## Backends
 
-Currently, only a file backend is implemented.  Other backends will be implemented soon.  
-
 ### File
 
-A file backend flushes the stats to a file according to a specified string template.
+The file backend flushes the stats to a file according to a specified string template.
 
 Backend Options:
 * `filename` The full path to the log file to be written to
@@ -253,6 +274,16 @@ Backend Options:
 The `outputFormat` template takes the name of the stat enclosed in {}.  There are also special tags that can be used to output the time the stats were flushed:  
 
 * `lastFlushTime` outputs the date and time in human-readable format
-* `lastFlushTimeUnix` outputs the unix timestamp 
+* `lastFlushTimeUnix` outputs the unix timestamp
+
+### StackDriver
+
+The StackDriver backend flushes the stats to StackDriver
+
+Backend Options
+* `apiKey` The API Key for accessing the StackDriver stats submission API
+* `source` (optional) the name of the Amazon Instance ID to map the stats to, in the format i-XXXXXXXX
+* `statsMap` A JSON object containing keys indicating the name of the stats in stats-logger, mapped to the values of StackDriver
+  custom metrics
 
 

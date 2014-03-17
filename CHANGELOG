@@ -2,6 +2,10 @@
 
 ### 0.1.0
 * Added calculated stat, which takes an array of stats to track and a calculation function
+* Added StackDriver backend
+* Modified mean stat and deprecated statName argument, added divisorStat and dividendStat to allow for processing stat-based mean values
+* Added fractionalDigits to mean stat options, which rounds to the supplied number of digits to the right of the decimal point
+* Added initialValue and resetValue to all statTypes, and fixed a bug preventing those values from being set to 0
 
 ### 0.0.3
 * Bumped version due to NPM issue corrupting the 0.0.2 build
