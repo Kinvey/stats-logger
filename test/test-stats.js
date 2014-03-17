@@ -154,10 +154,10 @@ describe('stat generator', function(done) {
 
   it('should generate a mean with options', function(done) {
     var emitter = new EventEmitter();
-    var a = stat.generate('mean', {meanType: 'stat', emitter: emitter, statName:'requests'});
+    var a = stat.generate('mean', {meanType: 'stat', emitter: emitter, divisorStat: 'requests'});
     a.statInstance.name.should.eql('mean');
     a.statInstance.type.should.eql('stat');
-    a.statInstance.statName.should.eql('requests');
+    a.statInstance.divisorStat.should.eql('requests');
     done();
   });
 
@@ -482,6 +482,12 @@ describe('max', function() {
     done();
   });
 
+  it('should be able to set an initial value of 0', function(done) {
+    var a = max.generate({initialValue: 0});
+    a.value.should.eql(0);
+    done();
+  });
+
   it('should be able to set a reset value other than 0', function(done) {
     var a = max.generate({resetValue: 100});
     a.setStat(24);
@@ -490,6 +496,17 @@ describe('max', function() {
     a.value.should.eql(50);
     a.reset();
     a.value.should.eql(100);
+    done();
+  });
+
+  it('should be able to set a reset value of 0', function(done) {
+    var a = max.generate({resetValue: 0});
+    a.setStat(24);
+    a.setStat(50);
+    a.setStat(32);
+    a.value.should.eql(50);
+    a.reset();
+    a.value.should.eql(0);
     done();
   });
 });
@@ -570,14 +587,15 @@ describe('min', function() {
     done();
   });
 
+  it('should be able to set an initial value of 0', function(done) {
+    var a = min.generate({initialValue: 0});
+    a.value.should.eql(0);
+    done();
+  });
+
   it('should be able to set an initial value other than 0', function(done) {
     var a = min.generate({initialValue: 100});
-    a.setStat(300);
-    a.setStat(250);
-    a.setStat(600);
     a.value.should.eql(100);
-    a.setStat(25);
-    a.value.should.eql(25);
     done();
   });
 
@@ -589,6 +607,17 @@ describe('min', function() {
     a.value.should.eql(24);
     a.reset();
     a.value.should.eql(100);
+    done();
+  });
+
+  it('should be able to set a reset value of 0', function(done) {
+    var a = min.generate({resetValue: 0});
+    a.setStat(24);
+    a.setStat(50);
+    a.setStat(32);
+    a.value.should.eql(24);
+    a.reset();
+    a.value.should.eql(0);
     done();
   });
 });
@@ -650,6 +679,43 @@ describe('mean', function() {
     done();
   });
 
+  it('should set an initial value for a mean other than 0', function(done) {
+    var emitter = new EventEmitter();
+    var a = stat.generate('mean', {meanType: 'stat', emitter: emitter, divisorStat: 'requests', initialValue:  100});
+    a.statInstance.value.should.eql(100);
+    done();
+  });
+
+  it('should set an initial value for a mean of 0', function(done) {
+    var emitter = new EventEmitter();
+    var a = stat.generate('mean', {meanType: 'stat', emitter: emitter, divisorStat: 'requests', initialValue:  0});
+    a.statInstance.value.should.eql(0);
+    done();
+  });
+
+  it('should set a reset value for a mean other than 0', function(done) {
+    var emitter = new EventEmitter();
+    var a = stat.generate('mean', {resetValue:  100});
+    a.setStat(10);
+    a.setStat(20);
+    a.setStat(30);
+    a.statInstance.value.should.eql(20);
+    a.reset();
+    a.statInstance.value.should.eql(100);
+    done();
+  });
+
+  it('should set a reset value for a mean of 0', function(done) {
+    var a = stat.generate('mean', {resetValue:  0});
+    a.setStat(10);
+    a.setStat(20);
+    a.setStat(30);
+    a.statInstance.value.should.eql(20);
+    a.reset();
+    a.statInstance.value.should.eql(0);
+    done();
+  });
+
   it('should reset a count mean', function(done) {
     var a = mean.generate({meanType: 'count'});
     a.setStat(15);
@@ -676,7 +742,7 @@ describe('mean', function() {
     done();
   });
 
-  it('should calculate mean from another stat', function(done) {
+  it('should calculate mean from another stat with legacy statName', function(done) {
     var emitter = new EventEmitter();
     var a = mean.generate({meanType: 'stat', statName: 'requests', emitter: emitter});
     a.setStat(15);
@@ -687,9 +753,55 @@ describe('mean', function() {
     done();
   });
 
-  it('should change value for stat means if the stat changes', function(done) {
+  it('should calculate mean from another stat with divisorStat', function(done) {
     var emitter = new EventEmitter();
-    var a = mean.generate({meanType: 'stat', statName: 'requests', emitter: emitter});
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', emitter: emitter});
+    a.setStat(15);
+    a.setStat(10);
+    a.setStat(100);
+    emitter.emit('requests', 25);
+    a.value.should.eql(5);
+    done();
+  });
+
+  it('should calculate mean from two other stats', function(done) {
+    var emitter = new EventEmitter();
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', dividendStat: 'time', emitter: emitter});
+    emitter.emit('time', 100);
+    emitter.emit('requests', 25);
+    a.value.should.eql(4);
+    emitter.emit('requests', 10);
+    a.value.should.eql(10);
+    emitter.emit('time', 50);
+    a.value.should.eql(5);
+    done();
+  });
+
+  it('should round a stat to a whole number if fractionDigits is set to 0', function(done) {
+    var emitter = new EventEmitter();
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', emitter: emitter, fractionDigits: 0});
+    a.setStat(15);
+    a.setStat(10);
+    a.setStat(100);
+    emitter.emit('requests', 13);
+    a.value.should.eql(10);
+    done();
+  });
+
+  it('should set decimal precision a stat if precisionType is a number other than 0', function(done) {
+    var emitter = new EventEmitter();
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', emitter: emitter, fractionDigits: 2});
+    a.setStat(15);
+    a.setStat(10);
+    a.setStat(100);
+    emitter.emit('requests', 13);
+    a.value.should.eql(9.62);
+    done();
+  });
+
+  it('should change value for stat mean if the stat changes', function(done) {
+    var emitter = new EventEmitter();
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', emitter: emitter});
     a.setStat(15);
     a.setStat(10);
     a.setStat(100);
@@ -700,9 +812,9 @@ describe('mean', function() {
     done();
   });
 
-  it('should change value for stat means if the dividend changes', function(done) {
+  it('should change value for stat mean if the dividend changes', function(done) {
     var emitter = new EventEmitter();
-    var a = mean.generate({meanType: 'stat', statName: 'requests', emitter: emitter});
+    var a = mean.generate({meanType: 'stat', divisorStat: 'requests', emitter: emitter});
     a.setStat(15);
     a.setStat(10);
     a.setStat(100);
@@ -713,10 +825,10 @@ describe('mean', function() {
     done();
   });
 
-  it('should emit an error for stat type if options do not include a statName', function(done) {
+  it('should emit an error for stat type if options do not include a divisorStat', function(done) {
     var emitter = new EventEmitter();
     process.once('error', function(err) {
-      err.message.should.eql("meanType of stat requires an emitter and statName");
+      err.message.should.eql("meanType of stat requires an emitter and divisorStat");
       should.not.exist(a);
       done();
     });
@@ -727,7 +839,7 @@ describe('mean', function() {
   it('should emit an error for stat type if options do not include an event emitter', function(done) {
     var emitter = new EventEmitter();
     process.once('error', function(err) {
-      err.message.should.eql("meanType of stat requires an emitter and statName");
+      err.message.should.eql("meanType of stat requires an emitter and divisorStat");
       should.not.exist(a);
       done();
     });
@@ -877,6 +989,45 @@ describe('calculated', function() {
     done();
   });
 
+  it('should set an intial value to 0', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({initialValue: 0, stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    a.value.should.eql(0);
+    done();
+  });
+
+  it('should set an intial value other than 0', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({initialValue: 10, stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    a.value.should.eql(10);
+    done();
+  });
+
+
   it('should reset a calculation stat', function(done) {
     var emitter = new EventEmitter();
 
@@ -898,6 +1049,60 @@ describe('calculated', function() {
     a.value.should.eql(1.5);
     a.reset();
     should.not.exist(a.value);
+    should.not.exist(a.statMap.stat1);
+    should.not.exist(a.statMap.stat2);
+    should.not.exist(a.statMap.stat3);
+    done();
+  });
+
+  it('should reset a calculation stat to a resetValue of 0', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({resetValue: 0, stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    a.reset();
+    a.value.should.eql(0);
+    should.not.exist(a.statMap.stat1);
+    should.not.exist(a.statMap.stat2);
+    should.not.exist(a.statMap.stat3);
+    done();
+  });
+
+  it('should reset a calculation stat to a resetValue other than 0', function(done) {
+    var emitter = new EventEmitter();
+
+    var calcFunction = function(stats, statsMap){
+      stats.forEach(function(stat){
+        if (typeof statsMap[stat] === 'undefined' || statsMap[stat] === null) {
+          return null;
+        }
+      });
+
+      return statsMap.stat1 * statsMap.stat2 / (statsMap.stat3 !== 0 ? statsMap.stat3 : 1);
+    };
+
+    var a = calculated.generate({resetValue: 10, stats: ['stat1', 'stat2', 'stat3', 'stat4'], calcFunction: calcFunction, emitter: emitter});
+
+    emitter.emit('stat1',15);
+    emitter.emit('stat2',10);
+    emitter.emit('stat3',100);
+    a.value.should.eql(1.5);
+    a.reset();
+    a.value.should.eql(10);
     should.not.exist(a.statMap.stat1);
     should.not.exist(a.statMap.stat2);
     should.not.exist(a.statMap.stat3);
@@ -1013,7 +1218,7 @@ describe('snapshot', function() {
     done();
   });
 
-  it('should allow an initial value to be set', function(done) {
+  it('should allow an initial value to be set to a value other than 0', function(done) {
     var a = snapshot.generate({initialValue: 100});
     a.value.should.eql(100);
     a.setStat(105);
@@ -1021,13 +1226,31 @@ describe('snapshot', function() {
     done();
   });
 
-  it('should allow reset value to be set', function(done) {
+  it('should allow an initial value to be set to a value of 0', function(done) {
+    var a = snapshot.generate({initialValue: 0});
+    a.value.should.eql(0);
+    a.setStat(105);
+    a.value.should.eql(105);
+    done();
+  });
+
+  it('should allow reset value to be set to a value other than 0', function(done) {
     var a = snapshot.generate({resetValue: 1000});
     should.not.exist(a.value);
     a.setStat(105);
     a.value.should.eql(105);
     a.reset();
     a.value.should.eql(1000);
+    done();
+  });
+
+  it('should allow reset value to be set to a value of 0', function(done) {
+    var a = snapshot.generate({resetValue: 0});
+    should.not.exist(a.value);
+    a.setStat(105);
+    a.value.should.eql(105);
+    a.reset();
+    a.value.should.eql(0);
     done();
   });
 
