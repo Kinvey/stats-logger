@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.1.1
+* Changed lastFlushTime to be in ISO-8601 time
+
 ### 0.1.0
 * Added calculated stat, which takes an array of stats to track and a calculation function
 * Added StackDriver backend
