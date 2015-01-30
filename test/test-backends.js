@@ -305,7 +305,7 @@ describe("backends", function() {
       args.data.length.should.eql(1);
       args.data[0].name.should.eql('fooStat');
       args.data[0].value.should.eql('bar');
-      args.data[0].collected_at.should.eql(flushTime);
+      args.data[0].collected_at.should.eql(parseInt(flushTime));
       done();
     });
 
@@ -329,7 +329,7 @@ describe("backends", function() {
       args.data[0].name.should.eql('fooStat');
       args.data[0].value.should.eql('bar');
       args.data[0].instance.should.eql('mySource');
-      args.data[0].collected_at.should.eql(flushTime);
+      args.data[0].collected_at.should.eql(parseInt(flushTime));
       done();
     });
 
