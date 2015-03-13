@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.1.3
+* Fixed incompatibility with node-config module
+
 ### 0.1.2
 * Fix where mean stat types were being sent as strings rather than floats
 
