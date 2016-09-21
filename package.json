@@ -22,10 +22,10 @@
     "node"
   ],
   "dependencies": {
-    "moment": "2.0.x",
     "mutil": "0.3.0"
   },
   "devDependencies": {
+    "moment": "2.0.x",
     "should": "*",
     "mocha": "*",
     "sinon": "*",
