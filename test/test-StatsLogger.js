@@ -422,11 +422,15 @@ describe('StatsLogger', function() {
     a.flush();
   });
 
-  it('should not fail if exception is thrown from  captureFunction', function(done) {
+  it.only('should not fail if exception is thrown from  captureFunction', function(done) {
     var a = statsLogger.createInstance(60, backend, {}, {});
     a.addStat("myStat", "counter", {initialValue: 0});
     var value = Math.floor(Math.random() * (10000000));
     var count = 0;
+    var error = '';
+    a.statsEmitter.once('error', function(message) {
+      error = message;
+    })
     a.captureStatOnFlush("myStat", function(){
       if (count++ === 0) {
         throw new Error("test");
@@ -436,6 +440,7 @@ describe('StatsLogger', function() {
 
     a.statsEmitter.once('myStat', function(stat) {
       stat.should.eql(value);
+      error.should.match(/Error collecting stat on flush/);
       done();
     });
     a.flush();
