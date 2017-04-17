@@ -409,5 +409,38 @@ describe('StatsLogger', function() {
     }, 1050);
   });
 
+  it('should be able to add a captureFunction', function(done) {
+    var a = statsLogger.createInstance(60, backend, {}, {});
+    a.addStat("myStat", "counter", {initialValue: 0});
+    var value = Math.floor(Math.random() * (10000000));
+    a.captureStatOnFlush("myStat", function(){return value;});
+
+    a.statsEmitter.once('myStat', function(stat) {
+      stat.should.eql(value);
+      done();
+    });
+    a.flush();
+  });
+
+  it('should not fail if exception is thrown from  captureFunction', function(done) {
+    var a = statsLogger.createInstance(60, backend, {}, {});
+    a.addStat("myStat", "counter", {initialValue: 0});
+    var value = Math.floor(Math.random() * (10000000));
+    var count = 0;
+    a.captureStatOnFlush("myStat", function(){
+      if (count++ === 0) {
+        throw new Error("test");
+      }
+      return value;
+    });
+
+    a.statsEmitter.once('myStat', function(stat) {
+      stat.should.eql(value);
+      done();
+    });
+    a.flush();
+    a.flush();
+  });
+
 
 });
