@@ -12,7 +12,8 @@
     "url": "git://github.com/Kinvey/stats-logger.git"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "eslint": "./node_modules/.bin/eslint ."
   },
   "keywords": [
     "stats",
@@ -24,10 +25,13 @@
   "dependencies": {
   },
   "devDependencies": {
-    "should": "*",
+    "eslint": "3.19.0",
+    "eslint-config-airbnb-base": "9.0.0",
+    "eslint-plugin-import": "2.2.0",
     "mocha": "*",
-    "sinon": "*",
-    "nock": "*"
+    "nock": "*",
+    "should": "*",
+    "sinon": "*"
   },
   "directories": {
     "lib": ".",
