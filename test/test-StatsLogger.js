@@ -17,7 +17,6 @@
 var EventEmitter = require('events').EventEmitter,
   sinon = require('sinon'),
   statsLogger = require('../lib/statsLogger'),
-  moment = require('moment'),
   backend = require('./mockBackend'),
   should = require('should');
 

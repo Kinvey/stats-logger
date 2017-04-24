@@ -18,7 +18,6 @@ var EventEmitter = require('events').EventEmitter,
   sinon = require('sinon'),
   fileBackend = require('../lib/backends/file'),
   stackDriverBackend = require('../lib/backends/StackDriver'),
-  moment = require('moment'),
   nock = require('nock');
 
 describe("backends", function() {
@@ -126,9 +125,9 @@ describe("backends", function() {
     });
 
 
-    it('should be able to output a moment', function(done) {
+    it('should format timestamp objects like moment with the object toString() method', function(done) {
       var options = {filename: "./stats.log", outputFormat: "{lastFlushTime} {foo} {foo2}"};
-      var flushTime = moment("2014-02-15");
+      var flushTime = { toString: function(){ return "Sat Feb 15 2014 00:00:00 GMT-0500" } };
       var stat = {foo: "bar", foo2: "bar2", lastFlushTime: flushTime};
       var fb = fileBackend.connect(emitter, options);
       var fileStub = sinon.stub(fb.statStream, "write", function(value) {
@@ -141,7 +140,7 @@ describe("backends", function() {
 
     it('should be able to include a moment format function in the template', function(done) {
       var options = {filename: "./stats.log", outputFormat: "{lastFlushTime} {foo} {foo2}"};
-      var flushTime = moment("2014-02-15").format('X');
+      var flushTime = Math.floor(new Date("2014-02-15 EST").getTime() / 1000);
       var stat = {foo: "bar", foo2: "bar2", lastFlushTime: flushTime};
       var fb = fileBackend.connect(emitter, options);
       var fileStub = sinon.stub(fb.statStream, "write", function(value) {
@@ -288,7 +287,7 @@ describe("backends", function() {
 
     it('should include flush time in payload', function(done) {
       var spy = sinon.spy();
-      var flushTime = moment('2014-2-15').format('X');
+      var flushTime = Math.floor(new Date('2014-2-15').getTime() / 1000);
       var sd = nock('https://custom-gateway.stackdriver.com')
         .post('/v1/custom')
         .reply(201, spy);
@@ -311,7 +310,7 @@ describe("backends", function() {
 
     it('should allow optional instance name', function(done) {
       var spy = sinon.spy();
-      var flushTime = moment('2014-2-15').format('X');
+      var flushTime = Math.floor(new Date('2014-2-15').getTime() / 1000);
       var sd = nock('https://custom-gateway.stackdriver.com')
         .post('/v1/custom')
         .reply(201, spy);
