@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.1.4
+* Added captureStatOnFlush method to allow a stat to be recorded just before each flush() call
+
 ### 0.1.3
 * Fixed incompatibility with node-config module
 
