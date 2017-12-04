@@ -401,13 +401,15 @@ describe("backends", function() {
     })
 
     it ('should use google-custom-metrics to upload', function(done) {
+      // mock google auth token route
       var ga = nock('https://www.googleapis.com')
         .post('/oauth2/v4/token')
         .reply(200, JSON.stringify({ access_token: 'ABC-123-DEF' }));
-// FIXME: second nock route not found, errors out
+      // persisted mock google stackdriver upload route (called multiple times)
       var gcm = nock('https://monitoring.googleapis.com')
         .post('/v3/projects/mock-stackdriver-account/timeSeries')
-        .reply(200, '');
+        .reply(200, '')
+        .persist();
 
       var sec = Math.floor(new Date().getTime() / 1000);
       var stackdriverPayload = {
