@@ -30,7 +30,7 @@
     "eslint-config-airbnb-base": "9.0.0",
     "eslint-plugin-import": "2.2.0",
     "google-custom-metrics": "0.10.1",
-    "mocha": "*",
+    "mocha": "3",
     "nock": "*",
     "should": "*",
     "sinon": "1.17.7"
