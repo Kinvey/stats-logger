@@ -4,6 +4,7 @@
   "description": "A lightweight application stats tracker and logger",
   "main": "index.js",
   "author": "Kinvey <support@kinvey.com>",
+  "license": "Apache-2.0",
   "contributors": [
     "Michael Salinger <mjsalinger@kinvey.com>"
   ],
@@ -28,6 +29,7 @@
     "eslint": "3.19.0",
     "eslint-config-airbnb-base": "9.0.0",
     "eslint-plugin-import": "2.2.0",
+    "google-custom-metrics": "0.10.1",
     "mocha": "*",
     "nock": "*",
     "should": "*",
