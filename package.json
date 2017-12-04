@@ -33,7 +33,7 @@
     "mocha": "*",
     "nock": "*",
     "should": "*",
-    "sinon": "*"
+    "sinon": "1.17.7"
   },
   "directories": {
     "lib": ".",
