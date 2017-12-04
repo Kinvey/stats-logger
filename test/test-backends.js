@@ -15,9 +15,11 @@
 "use strict";
 
 var EventEmitter = require('events').EventEmitter,
+  googleMetrics = require('google-custom-metrics'),
   sinon = require('sinon'),
   fileBackend = require('../lib/backends/file'),
   stackDriverBackend = require('../lib/backends/StackDriver'),
+  googleStackDriverBackend = require('../lib/backends/GoogleStackDriver'),
   nock = require('nock');
 
 describe("backends", function() {
@@ -359,4 +361,68 @@ describe("backends", function() {
       var stb = stackDriverBackend.connect(null, options);
     });
   });
+
+  describe ('GoogleStackDriver backend', function() {
+    var options;
+
+    beforeEach (function(done) {
+      options = {
+        apiKey: 'myKey',
+        keyFile: __dirname + '/mock-gcp-creds.json',
+        emitter: emitter,
+        statsMap: {},
+      }
+      done();
+    })
+
+    it ('should extend the StackDriver backend', function(done) {
+      var stb = stackDriverBackend.connect(emitter, options);
+      var name, stb, gstb;
+
+      gstb = googleStackDriverBackend.connect(emitter, options);
+      for (name in stb) {
+        if (typeof stb[name] === 'function' && name !== 'sendPayload') {
+          // TODO: each stackDriverBackend.connect() returns an instance of a newly created unique class,
+          // so prototype methods are not identical.  Check only the proprety types instead.
+          should.equal(typeof gstb[name], typeof stb[name]);
+        }
+      }
+
+      options.stackDriverBackend = stb;
+      gstb = googleStackDriverBackend.connect(emitter, options);
+      should.equal(gstb, stb);
+      for (name in stb) {
+        if (typeof stb[name] === 'function' && name !== 'sendPayload') {
+          should.equal(gstb[name], stb[name]);
+        }
+      }
+
+      done();
+    })
+
+    it ('should use google-custom-metrics to upload', function(done) {
+      var ga = nock('https://www.googleapis.com')
+        .post('/oauth2/v4/token')
+        .reply(200, JSON.stringify({ access_token: 'ABC-123-DEF' }));
+// FIXME: second nock route not found, errors out
+      var gcm = nock('https://monitoring.googleapis.com')
+        .post('/v3/projects/mock-stackdriver-account/timeSeries')
+        .reply(200, '');
+
+      var sec = Math.floor(new Date().getTime() / 1000);
+      var stackdriverPayload = {
+        timestamp: sec,
+        proto_version: 1,
+        data: [
+          { name: 'metric-name', value: 1.5, collected_at: sec - 1, instance: 'hostname' },
+          { name: 'metric-name', value: 2.5, collected_at: sec - 2, instance: 'hostname' },
+        ]
+      };
+
+      var gstb = googleStackDriverBackend.connect(emitter, options);
+      gstb.sendPayload(stackdriverPayload);
+
+      done();
+    })
+  })
 });
