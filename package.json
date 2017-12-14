@@ -1,6 +1,6 @@
 {
   "name": "stats-logger",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A lightweight application stats tracker and logger",
   "main": "index.js",
   "author": "Kinvey <support@kinvey.com>",
