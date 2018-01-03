@@ -24,7 +24,7 @@
     "node"
   ],
   "dependencies": {
-    "google-custom-metrics": "0.10.1"
+    "google-custom-metrics": "0.12.0"
   },
   "devDependencies": {
     "eslint": "3.19.0",
