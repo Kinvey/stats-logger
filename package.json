@@ -24,7 +24,8 @@
     "node"
   ],
   "dependencies": {
-    "google-custom-metrics": "0.12.0"
+    "google-custom-metrics": "0.12.0",
+    "prom-pushgateway": "0.6.1"
   },
   "devDependencies": {
     "eslint": "3.19.0",

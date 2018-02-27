@@ -286,4 +286,10 @@ Backend Options
 * `statsMap` A JSON object containing keys indicating the name of the stats in stats-logger, mapped to the values of StackDriver
   custom metrics
 
+### Prometheus
 
+The PrometheusDriver backend exposes the stats to Prometheus polls
+
+Backend Options
+* `port` - port to expose to prometheus, default 9091
+* `sameProcess` - whether to listen for metrics in the same process or fork a worker, default `true` same process

@@ -22,6 +22,7 @@ var EventEmitter = require('events').EventEmitter,
   fileBackend = require('../lib/backends/file'),
   stackDriverBackend = require('../lib/backends/StackDriver'),
   googleStackDriverBackend = require('../lib/backends/GoogleStackDriver'),
+  prometheusDriverBackend = require('../lib/backends/Prometheus'),
   nock = require('nock');
 
 describe("backends", function() {
