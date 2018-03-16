@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.3.0
+* new `Prometheus` backend
+
 ### 0.2.1
 * moved google-custom-metrics dependency
 
