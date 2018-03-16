@@ -457,7 +457,7 @@ describe("backends", function() {
     var http = require('http');
     var net = require('net');
 
-    var options = {
+    var stackDriverOptions = {
       stackDriverPort: 9091,
       stackDriverHost: 'localhost',
       statsMap: {},
@@ -470,7 +470,7 @@ describe("backends", function() {
     })
 
     it ('should return a StackDriver backend', function(done) {
-      var stb = stackDriverBackend.connect(emitter, options);
+      var stb = stackDriverBackend.connect(emitter, stackDriverOptions);
       var promb = prometheusBackend.connect(emitter, { port: 13337 });
       var name;
 
@@ -521,7 +521,7 @@ describe("backends", function() {
           promb.close();
           done();
         })
-      }, 100);
+      }, 200);
     })
 
     it ('should default to port 9091', function(done) {
@@ -532,7 +532,7 @@ describe("backends", function() {
           promb.close();
           done();
         })
-      }, 100);
+      }, 200);
     })
 
     it ('should throw on createServer error', function(done) {
@@ -573,7 +573,7 @@ describe("backends", function() {
           should.equal(uri.path, '/push/stackdriver');
           done();
         }, 50);
-      }, 100);
+      }, 200);
     })
 
   })
