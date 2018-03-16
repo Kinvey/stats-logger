@@ -1,4 +1,4 @@
-// Copyright 2014 Kinvey, Inc
+// Copyright 2014-2018 Kinvey, Inc
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ var EventEmitter = require('events').EventEmitter,
   fileBackend = require('../lib/backends/file'),
   stackDriverBackend = require('../lib/backends/StackDriver'),
   googleStackDriverBackend = require('../lib/backends/GoogleStackDriver'),
-  prometheusDriverBackend = require('../lib/backends/Prometheus'),
+  prometheusBackend = require('../lib/backends/Prometheus'),
   nock = require('nock');
 
 describe("backends", function() {
@@ -448,6 +448,115 @@ describe("backends", function() {
 
       var gstb = googleStackDriverBackend.connect(emitter, options);
       gstb.sendPayload(stackdriverPayload);
+    })
+
+  })
+
+  describe ('Prometheus backend', function() {
+    var promPushgateway = require('prom-pushgateway');
+    var http = require('http');
+    var net = require('net');
+
+    var options = {
+      stackDriverPort: 9091,
+      stackDriverHost: 'localhost',
+      statsMap: {},
+      apiKey: 'some key',
+    };
+
+    afterEach (function(done) {
+      nock.cleanAll();
+      done();
+    })
+
+    it ('should return a StackDriver backend', function(done) {
+      var stb = stackDriverBackend.connect(emitter, options);
+      var promb = prometheusBackend.connect(emitter, { port: 13337 });
+      var name;
+
+      // each backend is instanceof a new class, cannot compare by constructor
+      // Check instead that each of the methods exists.
+      for (name in promb) {
+        if (typeof promb[name] === 'function' && name !== 'close') should.equal(typeof promb[name], typeof stb[name]);
+      }
+
+      for (name in stb) {
+        if (typeof stb[name] === 'function') should.equal(typeof promb[name], typeof stb[name]);
+      }
+
+      promb.close()
+      done();
+    })
+
+    it ('should create same-process gateway', function(done) {
+      var spy = sinon.spy(promPushgateway, 'createServer');
+      var promb = prometheusBackend.connect(emitter, { port: 13337, sameProcess:  true });
+      setTimeout(function() {
+        spy.restore();
+        should.ok(spy.called);
+        should.ok(promb._gateway instanceof http.Server);
+        promb.close();
+        done();
+      })
+    })
+
+    it ('should fork worker-process gateway', function(done) {
+      var spy = sinon.spy(promPushgateway, 'forkServer');
+      var promb = prometheusBackend.connect(emitter, { port: 13337 });
+      setTimeout(function() {
+        spy.restore();
+        should.ok(promb._gateway.pid !== process.pid);
+        should.ok(spy.called);
+        should.ok(process.kill(promb._gateway.pid, 0));
+        promb.close();
+        done();
+      })
+    })
+
+    it ('should listen on configured port', function(done) {
+      var promb = prometheusBackend.connect(emitter, { port: 13337 });
+      setTimeout(function() {
+        var socket = net.connect(13337);
+        socket.on('connect', function() {
+          promb.close();
+          done();
+        })
+      }, 100);
+    })
+
+    it ('should default to port 9091', function(done) {
+      var promb = prometheusBackend.connect(emitter, {});
+      setTimeout(function() {
+        var socket = net.connect(9091);
+        socket.on('connect', function() {
+          promb.close();
+          done();
+        })
+      }, 100);
+    })
+
+    it ('should throw on createServer error', function(done) {
+      var stub = sinon.stub(promPushgateway, 'createServer').throws(new Error('mock createServer exception'));
+      should.throws(function(){ prometheusBackend.connect(emitter, { sameProcess: true }) }, /mock createServer exception/);
+      stub.restore();
+
+      var stub = sinon.stub(promPushgateway, 'createServer').yields(new Error('mock createServer error'));
+      should.throws(function(){ prometheusBackend.connect(emitter, { sameProcess: true }) }, /mock createServer error/);
+      stub.restore();
+
+      done();
+    })
+
+    it ('should throw on fork error', function(done) {
+      var stub = sinon.stub(promPushgateway, 'forkServer').throws(new Error('mock fork exception'));
+      should.throws(function(){ prometheusBackend.connect(emitter, {}) }, /mock fork exception/);
+      stub.restore();
+
+      var stub = sinon.stub(promPushgateway, 'forkServer').yields(new Error('mock fork error'));
+      should.throws(function(){ prometheusBackend.connect(emitter, {}) }, /mock fork error/);
+      stub.restore();
+
+      done();
     })
 
   })
