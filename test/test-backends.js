@@ -559,5 +559,22 @@ describe("backends", function() {
       done();
     })
 
+    it ('flush should upload stackdriver metrics to port 9091', function(done) {
+      var promb = prometheusBackend.connect(emitter, { sameProcess: true });
+      var spy = sinon.spy(http, 'request');
+      setTimeout(function() {
+        emitter.emit('flush', {a: 1, b: 2});
+        setTimeout(function(){
+          promb.close();
+          spy.restore();
+          var uri = spy.args[0][0];
+          should.equal(uri.port, 9091);
+          should.equal(uri.hostname, 'localhost');
+          should.equal(uri.path, '/push/stackdriver');
+          done();
+        }, 50);
+      }, 100);
+    })
+
   })
 });
